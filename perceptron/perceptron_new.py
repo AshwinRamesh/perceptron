@@ -48,6 +48,9 @@ class Perceptron(object):
             if klass not in self.features:
                 self.classes.append(klass)
 
+    def add_training_data(self, training_data_set):
+        pass  # TODO
+
     def set_iterations(self, iterations=1):
         """
         @description: set the number of iterations to run through training data
@@ -75,12 +78,46 @@ class Perceptron(object):
 
     @abstractmethod
     def initialise_perceptron(self):
+        """
+        @description: initialises the perceptron in both object and database form
+        """
         pass
 
     @abstractmethod
     def train(self):
+        """
+        @desciption: Loads all training data from database to train the perceptron.
+            Will "retrain" if previously trained
+        """
         pass
 
     @abstractmethod
     def classify(self):
+        """
+        @description: Will classify a input instance
+        """
         pass
+
+
+class AveragedPerceptron(Perceptron):
+
+    def __init__(self):
+        parent = super(AveragedPerceptron, self)
+        parent.__init__()
+
+    def initialise_perceptron(self):
+        pass  # TODO
+
+    def train(self):
+        pass  # TODO
+
+    def classify(self, feature_data_set):
+        pass  # TODO
+
+    def calculate_averaged_weights(self):
+        # TODO
+        weight_set = []
+        for k in self.classes:
+            res = database.get_all_historical_weights_for_class(k)
+            weight_set[k] = compute_average_for_class(res)
+        return weight_set
