@@ -14,14 +14,14 @@ def create_db(db_name, destroy_existing=True):
         - db_name: the name of the database file without the .db extension
         - destroy_existing (bool) - if True, and the file exists, it will destroy and create the db again. Otherwise returns false
     """
-    db_name = db_name + ".db"
-    if os.path.isfile(db_name):
+    db = db_name + ".db"
+    if os.path.isfile(db):
         if destroy_existing:
             destroy_db(db_name)
         else:
             return False  # DB exists. Cannot create the db
 
-    c = sql.connect(db_name)
+    c = sql.connect(db)
     c.close()
     return True
 
@@ -64,10 +64,11 @@ def _simple_query_wrapper(db_name, sql, args=None):
         else:
             c.execute(sql)
 
-        c.commit()
+        conn.commit()
         conn.close()
         return True
-    except:
+    except Exception, e:
+        print e
         try:  # Incase that the connection was established and another error occured,
               # close the connection before returning
             conn.close()
@@ -115,7 +116,7 @@ def _create_perceptron_details_table(db_name):
         sql = """
             CREATE TABLE perceptron_details (
                 id INTEGER PRIMARY KEY,
-                iteratations INTEGER
+                iterations INTEGER
             );
         """
         return _simple_query_wrapper(db_name, sql, None)
@@ -148,9 +149,8 @@ def _create_training_datas_table(db_name, features):
             %s);"
     feature_sql = ""
     for feature in features:
-        feature_sql += ", %s REAL"
+        feature_sql += ", %s REAL" % feature
     sql = sql % feature_sql
-
     return _simple_query_wrapper(db_name, sql, None)
 
 
@@ -161,7 +161,7 @@ def _create_weights_table(db_name, features):
             %s);"
     feature_sql = ""
     for feature in features:
-        feature_sql += ", %s REAL"
+        feature_sql += ", %s REAL" % feature
     sql = sql % feature_sql
 
     return _simple_query_wrapper(db_name, sql, None)
@@ -175,7 +175,7 @@ def _create_historical_weights_table(db_name, features):
             %s);"
     feature_sql = ""
     for feature in features:
-        feature_sql += ", %s REAL"
+        feature_sql += ", %s REAL" % feature
     sql = sql % feature_sql
 
     return _simple_query_wrapper(db_name, sql, None)
@@ -188,7 +188,7 @@ def _create_classification_data_table(db_name, features):
             %s);"
     feature_sql = ""
     for feature in features:
-        feature_sql += ", %s REAL"
+        feature_sql += ", %s REAL" % feature
     sql = sql % feature_sql
 
     return _simple_query_wrapper(db_name, sql, None)
@@ -257,7 +257,6 @@ def _insert_weights(db_name, klass, feature_dict):
         feature_key_sql += ", %s" % k
     sql = sql % (feature_key_sql, feature_arg_sql)
     args = tuple(args)
-
     return _simple_query_wrapper(db_name, sql, args)
 
 

@@ -1,180 +1,203 @@
 from abc import ABCMeta, abstractmethod
-import numpy as np
 from . import database
+import traceback
 
 
 class Perceptron(object):
     """
-    @description: Abstract class defining a Perceptron model
+    @description: Base perceptron class
+    @type - Abstract Class
     """
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self.name = "Perceptron"
+    def __init__(self, db="perceptron"):
+        self.db = db  # relative location of database
+        self.base_weight = float(0.0)
         self.iterations = 1
         self.weights = {}
         self.features = []
         self.classes = []
 
-    def _add_feature_set(self, feature_set):
+    @staticmethod
+    def load_from_db(db_name):
         """
-        @description: add a set of features
-        @args:
-            - featureset - the array set of features
+        @description: Create the perceptron model from an existing database
         """
-        for feature in feature_set:
-            if feature not in self.features:
-                self.features.append(feature)
+        pass
 
     def add_feature(self, feature):
         """
-        @description: adds a feature to the set of features
+        @description: add feature(s) to the perceptron
         """
-        if feature not in self.features:
-            self.features.append(feature)
-        raise Exception()
+        if type(feature) is list:
+            for f in feature:
+                if f not in self.features:
+                    self.features.append(f)
+        elif type(feature) is str:
+            if feature not in self.features:
+                self.features.append(feature)
 
-    def _add_class_set(self, class_set):
-        for klass in class_set:
-            if klass not in self.classes:
+    def add_class(self, klass):
+        """
+        @description: add class(es) to the perceptron
+        """
+        if type(klass) is list:
+            for k in klass:
+                if k not in self.features:
+                    self.classes.append(k)
+        elif type(klass) is str:
+            if klass not in self.features:
                 self.classes.append(klass)
 
-    def add_class(self, class_name):
-        """
-        @description: adds a class to the set of classes
-        """
-        if class_name not in self.classes:
-            self.classes.append(class_name)
-        raise Exception()
+    def add_training_data(self, training_data_set):
+        pass  # TODO
 
-    def _initialise_weights(self):
+    def update_weight(self, klass, weight_set):
+        pass  # TODO
+
+    def set_iterations(self, iterations=1):
         """
-        @description: initialises the weights
+        @description: set the number of iterations to run through training data
         """
-        print "hellogdsg"
-        self.weights = [0] * len(self.features)
+        if iterations <= 0:
+            raise Exception("Iterations must be minimum 1.")
+        self.iterations = iterations
+
+    def initialise_weights(self):
+        """
+        @description: initialise the starting weights to 0.
+        @note - only call this once all classes and
+                features have been set in the perceptron
+        """
+        if not self.features or len(self.features) == 0:
+            raise Exception("Cannot initialise weights. Features not set.")
+        if not self.classes or len(self.classes) == 0:
+            raise Exception("Cannot initialise weights. Classes not set.")
+
+        for c in self.classes:
+            temp_weight = {}
+            for f in self.features:
+                temp_weight[f] = self.base_weight
+            self.weights[c] = temp_weight
+
+    @abstractmethod
+    def initialise_perceptron(self):
+        """
+        @description: initialises the perceptron in both object and database form
+        """
+        pass
 
     @abstractmethod
     def train(self):
+        """
+        @desciption: Loads all training data from database to train the perceptron.
+            Will "retrain" if previously trained
+        """
+        pass
+
+    @abstractmethod
+    def classify(self):
+        """
+        @description: Will classify a input instance
+        """
         pass
 
 
 class AveragedPerceptron(Perceptron):
-    """
-    @description: Averaged Perceptrion implementation
-    @args:
-        - Features: a vector of size N which describes a given input
-        - Classes: a string which represents the output of a given feature set
-    """
 
-    @staticmethod
-    def load_perceptron_from_db(perceptron_name):
-        """
-        @description: load a perceptron from a given sqlite database
-        """
-        return AveragedPerceptron()
-        pass  # TODO
-
-    def __init__(self, name="Perceptron", iterations=1):
+    def __init__(self, db):
         parent = super(AveragedPerceptron, self)
-        parent.__init__()
-        self.name = name
-        self.training_data_count = 0
-        self.history = []  # historical weights after each iteration
-        self.iterations = iterations
+        parent.__init__(db)
 
-    @staticmethod
-    def create(name, features, classes, iterations=1):
+    def initialise_perceptron(self, classes, features, iterations=1, training_data=None):
         """
-        returns a new perceptron model to use
+        @description: Initialise the perceptron with data and write to db
+            - will set classes/features/iterations
+            - if training data is provided, it will write the data to the DB
         """
-        if iterations < 1:
-            raise Exception("Iterations must be >= 1")
-
-        if database.create_db(name):  # create perceptron database
-            pass
+        print self.db
+        if database.create_db(self.db):
+            print "Database %s.db created" % self.db
         else:
             return False
 
-        if database.create_tables(name, classes, features, iterations):
-            pass
-        else:
+        # Set the details for the actual object
+        self.set_iterations(iterations)
+        self.add_class(classes)
+        self.add_feature(features)
+        self.initialise_weights()
+
+        try:  # create tables  - change this later to massive if and TODO
+            if not database._create_perceptron_details_table(self.db):
+                raise Exception()
+            if not database._create_classes_table(self.db):
+                raise Exception()
+            if not database._create_features_table(self.db):
+                raise Exception()
+            if not database._create_training_datas_table(self.db, self.features):
+                raise Exception()
+            if not database._create_weights_table(self.db, self.features):
+                raise Exception()
+            if not database._create_historical_weights_table(self.db, self.features):
+                raise Exception()
+            if not database._create_classification_data_table(self.db, self.features):
+                raise Exception()
+        except:
+            print "Error during table creation. Deleting database."
+            print traceback.print_exc()
+            try:
+                database.destroy_db(self.db)
+            except:
+                pass
             return False
 
-        p = AveragedPerceptron(name=name, iterations=iterations)
-        p._add_feature_set(features)
-        p._add_class_set(classes)
-        p._initialise_weights()
+        try:  # insert initial data into tables
+            if not database._insert_perceptron_details(self.db, self.iterations):
+                raise Exception()
+            if not database._insert_classes(self.db, self.classes):
+                raise Exception()
+            if not database._insert_features(self.db, self.features):
+                raise Exception()
+            for c in self.weights.keys():
+                if not database._insert_weights(self.db, c, self.weights[c]):
+                    raise Exception()
+        except:
+            print "Error during data insertion. Deleting database."
+            print traceback.print_exc()
+            try:
+                database.destroy_db(self.db)
+            except:
+                pass
+            return False
 
-        return p
-
-    def add_training_data(self, data):
-        self.training_data_count += 1
-        database.add_training_data(self.name, data)
         return True
 
-    def _initialise_weights(self):
-        """
-         need to have classes and features defined before calling this function
-        """
-        for klass in self.classes:
-            print klass
-            self.weights[klass] = np.zeros(len(self.features))
+    def train(self):
+        pass  # TODO
 
-    def _initialise_history(self):
-        self.history = {}
-        i = self.iterations
-        for klass in self.classes:
-            self.history[klass] = [None] * i
-
-    def train(self, training_data, do_validation=True):
-        """
-        @description: train the perceptron with training data provided
-        @args: training_data -> array of dicts
-            dict representation example: {"feature_vector": [1,0,1,1], "class": "Dog"}
-        """
-
-        if do_validation:
-            self.validate_data(training_data)  # this is done before the perceptron is trained so that any data errors can be computed early.
-
-        weights = self.weights
-        history = self.history
-
-        for i in range[0:self.iterations]:
-            # TODO - randomise the training data order
-            for data in training_data:
-                klass = training_data["class"]  # class
-                v = training_data["feature_vector"]  # vector
-                res = self.classify(weights, v)
-                if res is not klass:  # the correct class != the predicted class
-
-                    pass
-                    # TODO - do vector shit here
-                #TODO - save the weight to vi
-        # TODO - calculate avg
-
-    def classify(self, feature_vector):
+    def classify(self, feature_data_set):  # TODO - test this
         """
         @description: sum the feature vector against the Perceptron weights to
         classify the vector
         @feature_vector - dict e.g. {"featureA": 0, "featureB": 1 ..}
         """
-        best = -np.inf
+        best = -100000000.0
         best_class = None
         weights = self.weights
         for c in self.classes:
             score = 0.0
-            for feature in feature_vector.keys():
-                score += feature_vector[feature] * weights[c][feature]
+            for feature in feature_data_set.keys():
+                score += feature_data_set[feature] * weights[c][feature]
             if score > best:
                 best = score
                 best_class = c
         return best, best_class
 
-    def predict(self, feature_vector):
-        """
-        @description: Given a feature vector that complies with the given perceptron model,
-         the ML classifier will attempt to correctly predict the class of the vector.
-        """
-        pass
+    def calculate_averaged_weights(self):
+        # TODO
+        weight_set = []
+        for k in self.classes:
+            res = database.get_all_historical_weights_for_class(k)
+            weight_set[k] = compute_average_for_class(res)
+        return weight_set
