@@ -75,6 +75,36 @@ def _simple_query_wrapper(db_name, sql, args=None):
             pass
         return False
 
+
+def _simple_select_query_wrapper(db_name, sql, args=None):
+    """
+    @description: wrapes the select queries around this function to handle exceptions, etc.
+    @returns - False OR Array of Row objects
+    """
+    try:
+        conn = get_db_connection(db_name)
+        if not conn:
+            return False
+        c = conn.cursor()
+
+        if args:
+            c.execute(sql, args)
+        else:
+            c.execute(sql)
+        r = c.fetchall()
+        conn.close()
+        if len(r) == 0:
+            return None
+        return r
+    except:
+        try:  # Incase that the connection was established and another error occured,
+              # close the connection before returning
+            conn.close()
+        except:
+            pass
+        return False
+
+
 """
 Singular Database Create Table Functions
     - table definitions can be found in sql/base_schema.sql
@@ -268,123 +298,152 @@ Select Database Functions
     - functions to select data from tables
 """
 
-def
+
+def get_iterations(db_name):
+    sql = "SELECT iterations FROM perceptron_details LIMIT 1"  # since only one row should exist per perceptron
+    res = _simple_select_query_wrapper(db_name, sql, None)
+    if res:
+        return int(res['iterations'])
+    return False
+
+
+def get_classes(db_name):
+    sql = "SELECT id, class FROM classes"
+    res = _simple_query_wrapper(db_name, sql, 0)
+
+    if res:
+        ret_list = []
+        for r in res:
+            ret_list.append(r['class'])
+        return ret_list
+    return False
+
+
+def get_features(db_name):
+    sql = "SELECT id, feature FROM features"
+    res = _simple_query_wrapper(db_name, sql, 0)
+
+    if res:
+        ret_list = []
+        for r in res:
+            ret_list.append(r['feature'])
+        return ret_list
+    return False
 
 
 
 
 
+# def create_tables(db_name, classes, features, iterations):
+#     conn = get_db_connection(db_name)
+#     if not conn:
+#         return False
 
-def create_tables(db_name, classes, features, iterations):
-    conn = get_db_connection(db_name)
-    if not conn:
-        return False
+#     # Create the iteration table
+#     sql = """CREATE TABLE perceptron_details(
+#                 id INTEGER PRIMARY KEY,
+#                 iterations INT
+#         );"""
+#     conn.execute(sql)
+#     conn.commit()
 
-    # Create the iteration table
-    sql = """CREATE TABLE perceptron_details(
-                id INTEGER PRIMARY KEY,
-                iterations INT
-        );"""
-    conn.execute(sql)
-    conn.commit()
+#     # Insert details into table
+#     sql = "INSERT INTO perceptron_details (iterations) VALUES (?);"
+#     args = (iterations, )
 
-    # Insert details into table
-    sql = "INSERT INTO perceptron_details (iterations) VALUES (?);"
-    args = (iterations, )
+#     conn.execute(sql, args)
+#     conn.commit()
 
-    conn.execute(sql, args)
-    conn.commit()
+#     # Create the class table
+#     sql = """CREATE TABLE classes(
+#                 id INTEGER PRIMARY KEY,
+#                 class TEXT
+#         );"""
+#     conn.execute(sql)
+#     conn.commit()
 
-    # Create the class table
-    sql = """CREATE TABLE classes(
-                id INTEGER PRIMARY KEY,
-                class TEXT
-        );"""
-    conn.execute(sql)
-    conn.commit()
+#     # Insert into classes table
+#     for klass in classes:
+#         sql = "INSERT INTO classes (class) VALUES (?)"
+#         args = (klass, )
+#         conn.execute(sql, args)
+#         conn.commit()
 
-    # Insert into classes table
-    for klass in classes:
-        sql = "INSERT INTO classes (class) VALUES (?)"
-        args = (klass, )
-        conn.execute(sql, args)
-        conn.commit()
+#     # Create features table
+#     sql = """CREATE table features(
+#                 id INTEGER PRIMARY KEY,
+#                 feature TEXT
+#         );"""
+#     conn.execute(sql)
+#     conn.commit()
 
-    # Create features table
-    sql = """CREATE table features(
-                id INTEGER PRIMARY KEY,
-                feature TEXT
-        );"""
-    conn.execute(sql)
-    conn.commit()
+#     # Insert features
+#     for feature in features:
+#         sql = "INSERT INTO features (feature) VALUES (?)"
+#         args = (feature, )
+#         conn.execute(sql, args)
+#         conn.commit()
 
-    # Insert features
-    for feature in features:
-        sql = "INSERT INTO features (feature) VALUES (?)"
-        args = (feature, )
-        conn.execute(sql, args)
-        conn.commit()
+#     # Create training data table
+#     sql = """CREATE TABLE training_datas(
+#                 id INTEGER PRIMARY KEY,
+#                 class INT
+#         """
 
-    # Create training data table
-    sql = """CREATE TABLE training_datas(
-                id INTEGER PRIMARY KEY,
-                class INT
-        """
+#     feature_sql = ""
+#     for feature in features:
+#         feature_sql += ", %s REAL" % feature
 
-    feature_sql = ""
-    for feature in features:
-        feature_sql += ", %s REAL" % feature
+#     sql += feature_sql + ");"
+#     conn.execute(sql)
+#     conn.commit()
 
-    sql += feature_sql + ");"
-    conn.execute(sql)
-    conn.commit()
+#     # Create the weights table
+#     sql = "CREATE TABLE weights(\
+#                 id INTEGER PRIMARY KEY,\
+#                 class_id INTEGER\
+#                 %s);" % feature_sql
+#     conn.execute(sql)
+#     conn.commit()
 
-    # Create the weights table
-    sql = "CREATE TABLE weights(\
-                id INTEGER PRIMARY KEY,\
-                class_id INTEGER\
-                %s);" % feature_sql
-    conn.execute(sql)
-    conn.commit()
+#     # Insert temporary weights into table
+#     #i = 0
+#     #for klass in classes:
+#     #    i += 1
+#     #    sql = "INSERT INTO weights (class_id, weight) VALUES (%d, 0.0)" % i
+#     #    conn.execute(sql)
+#     #    conn.commit()
 
-    # Insert temporary weights into table
-    #i = 0
-    #for klass in classes:
-    #    i += 1
-    #    sql = "INSERT INTO weights (class_id, weight) VALUES (%d, 0.0)" % i
-    #    conn.execute(sql)
-    #    conn.commit()
-
-    conn.close()
-    return True
+#     conn.close()
+#     return True
 
 
-def add_training_data(db_name, data):
-    """
-    @description: add a training data item
-    """
-    conn = get_db_connection(db_name)
-    klass = data['class']
-    del(data['class'])
+# def add_training_data(db_name, data):
+#     """
+#     @description: add a training data item
+#     """
+#     conn = get_db_connection(db_name)
+#     klass = data['class']
+#     del(data['class'])
 
-    sql = "INSERT INTO training_datas (%s, class) VALUES (%s, %s)"
-    fields_sql = ",".join(data.keys())
-    value_sql = ""
-    values = []
+#     sql = "INSERT INTO training_datas (%s, class) VALUES (%s, %s)"
+#     fields_sql = ",".join(data.keys())
+#     value_sql = ""
+#     values = []
 
-    for key in data.keys():
-        values.append(data[key])
-    value_sql = ",".join(values)
+#     for key in data.keys():
+#         values.append(data[key])
+#     value_sql = ",".join(values)
 
-    # get class id
-    c = conn.cursor()
-    c.execute("SELECT id FROM classes WHERE class =?", (klass, ))
-    r = c.fetchone()
-    class_id = r['id']
+#     # get class id
+#     c = conn.cursor()
+#     c.execute("SELECT id FROM classes WHERE class =?", (klass, ))
+#     r = c.fetchone()
+#     class_id = r['id']
 
-    sql = sql % (fields_sql, value_sql, class_id)
-    conn.execute(sql)
-    conn.commit()
-    conn.close()
-    return True
+#     sql = sql % (fields_sql, value_sql, class_id)
+#     conn.execute(sql)
+#     conn.commit()
+#     conn.close()
+#     return True
 
