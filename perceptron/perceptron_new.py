@@ -56,9 +56,22 @@ class Perceptron(object):
             raise Exception("Iterations must be minimum 1.")
         self.iterations = iterations
 
+    def initialise_weights(self):
+        """
+        @description: initialise the starting weights to 0.
+        @note - only call this once all classes and
+                features have been set in the perceptron
+        """
+        if not self.features or len(self.features) == 0:
+            raise Exception("Cannot initialise weights. Features not set.")
+        if not self.classes or len(self.classes) == 0:
+            raise Exception("Cannot initialise weights. Classes not set.")
 
-
-
+        for c in self.classes:
+            temp_weight = {}
+            for f in self.features:
+                temp_weight[f] = 0.0
+            self.weights[c] = temp_weight
 
     @abstractmethod
     def initialise_perceptron(self):
