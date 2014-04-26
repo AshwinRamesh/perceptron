@@ -2,6 +2,11 @@ import os
 import sqlite3 as sql
 
 
+"""
+Basic Database wrapper Functions
+"""
+
+
 def create_db(db_name, destroy_existing=True):
     """
     @description: Try and create a sqlite3 db if it does not exist
@@ -41,6 +46,95 @@ def get_db_connection(db_name):
         return conn
     except:
         return False
+
+
+"""
+Singular Database Create Table Functions
+"""
+
+
+def _create_perceptron_details_table(db_name):
+    try:
+        conn = get_db_connection(db_name)
+        if not conn:
+            return False
+        c = conn.cursor()
+
+        sql = """
+            CREATE TABLE perceptron_details (
+                id INTEGER PRIMARY KEY,
+                iteratations INTEGER
+            );
+        """
+
+        c.execute(sql)
+        c.commit()
+        conn.close()
+        return True
+    except:
+        return False
+
+
+def _create_classes_table(db_name):
+    try:
+        conn = get_db_connection(db_name)
+        if not conn:
+            return False
+        c = conn.cursor()
+
+        sql = """
+            CREATE TABLE classes (
+                id INTEGER PRIMARY KEY,
+                class TEXT
+            );
+        """
+
+        c.execute(sql)
+        c.commit()
+        conn.close()
+        return True
+    except:
+        return False
+
+
+def _create_features_table(db_name):
+    try:
+        conn = get_db_connection(db_name)
+        if not conn:
+            return False
+        c = conn.cursor()
+
+        sql = """
+            CREATE TABLE features (
+                id INTEGER PRIMARY KEY,
+                feature TEXT
+            );
+        """
+
+        c.execute(sql)
+        c.commit()
+        conn.close()
+        return True
+    except:
+        return False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def create_tables(db_name, classes, features, iterations):
