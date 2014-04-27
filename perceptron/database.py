@@ -330,119 +330,21 @@ def get_features(db_name):
     return False
 
 
+"""
+Update Database Functions
+    - functions to update table data
+"""
 
 
+def update_weights(db_name, klass, weight_set):
+    sql = "UPDATE weights SET %s WHERE class = ?"
+    args = []
+    attribute_sql = []
 
-# def create_tables(db_name, classes, features, iterations):
-#     conn = get_db_connection(db_name)
-#     if not conn:
-#         return False
+    for k in weight_set.keys():
+        args.append(weight_set[k])
+        attribute_sql.append("%s = ?" % k)
 
-#     # Create the iteration table
-#     sql = """CREATE TABLE perceptron_details(
-#                 id INTEGER PRIMARY KEY,
-#                 iterations INT
-#         );"""
-#     conn.execute(sql)
-#     conn.commit()
-
-#     # Insert details into table
-#     sql = "INSERT INTO perceptron_details (iterations) VALUES (?);"
-#     args = (iterations, )
-
-#     conn.execute(sql, args)
-#     conn.commit()
-
-#     # Create the class table
-#     sql = """CREATE TABLE classes(
-#                 id INTEGER PRIMARY KEY,
-#                 class TEXT
-#         );"""
-#     conn.execute(sql)
-#     conn.commit()
-
-#     # Insert into classes table
-#     for klass in classes:
-#         sql = "INSERT INTO classes (class) VALUES (?)"
-#         args = (klass, )
-#         conn.execute(sql, args)
-#         conn.commit()
-
-#     # Create features table
-#     sql = """CREATE table features(
-#                 id INTEGER PRIMARY KEY,
-#                 feature TEXT
-#         );"""
-#     conn.execute(sql)
-#     conn.commit()
-
-#     # Insert features
-#     for feature in features:
-#         sql = "INSERT INTO features (feature) VALUES (?)"
-#         args = (feature, )
-#         conn.execute(sql, args)
-#         conn.commit()
-
-#     # Create training data table
-#     sql = """CREATE TABLE training_datas(
-#                 id INTEGER PRIMARY KEY,
-#                 class INT
-#         """
-
-#     feature_sql = ""
-#     for feature in features:
-#         feature_sql += ", %s REAL" % feature
-
-#     sql += feature_sql + ");"
-#     conn.execute(sql)
-#     conn.commit()
-
-#     # Create the weights table
-#     sql = "CREATE TABLE weights(\
-#                 id INTEGER PRIMARY KEY,\
-#                 class_id INTEGER\
-#                 %s);" % feature_sql
-#     conn.execute(sql)
-#     conn.commit()
-
-#     # Insert temporary weights into table
-#     #i = 0
-#     #for klass in classes:
-#     #    i += 1
-#     #    sql = "INSERT INTO weights (class_id, weight) VALUES (%d, 0.0)" % i
-#     #    conn.execute(sql)
-#     #    conn.commit()
-
-#     conn.close()
-#     return True
-
-
-# def add_training_data(db_name, data):
-#     """
-#     @description: add a training data item
-#     """
-#     conn = get_db_connection(db_name)
-#     klass = data['class']
-#     del(data['class'])
-
-#     sql = "INSERT INTO training_datas (%s, class) VALUES (%s, %s)"
-#     fields_sql = ",".join(data.keys())
-#     value_sql = ""
-#     values = []
-
-#     for key in data.keys():
-#         values.append(data[key])
-#     value_sql = ",".join(values)
-
-#     # get class id
-#     c = conn.cursor()
-#     c.execute("SELECT id FROM classes WHERE class =?", (klass, ))
-#     r = c.fetchone()
-#     class_id = r['id']
-
-#     sql = sql % (fields_sql, value_sql, class_id)
-#     conn.execute(sql)
-#     conn.commit()
-#     conn.close()
-#     return True
-
+    sql = sql % ", ".join(attribute_sql)
+    args.append(klass)
+    _simple_query_wrapper(db_name, sql, tuple(args))

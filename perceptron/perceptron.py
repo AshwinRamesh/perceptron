@@ -18,12 +18,17 @@ class Perceptron(object):
         self.weights = {}
         self.features = []
         self.classes = []
+        self.training_data_count = {}
 
     @staticmethod
     def load_from_db(db_name):
         """
         @description: Create the perceptron model from an existing database
         """
+        load_perceptron_details()
+        load_features()
+        load_classes()
+        load_weights()
         pass
 
     def add_feature(self, feature):
@@ -46,15 +51,38 @@ class Perceptron(object):
             for k in klass:
                 if k not in self.features:
                     self.classes.append(k)
+                    self.training_data_count[k] = 0
         elif type(klass) is str:
             if klass not in self.features:
                 self.classes.append(klass)
+                self.training_data_count[klass] = 0
 
-    def add_training_data(self, training_data_set):
-        pass  # TODO
+    def add_training_data(self, klass, training_data_set):
+        # Validation
+        if klass not in self.weights.keys():
+            raise Exception("Undefined class")
+        if not set(self.features) == set(training_data_set.keys()):
+            raise Exception("incorrect weight features provided")
+
+        database._insert_training_data(self.db, klass, training_data_set)
+        self.training_data_count[klass] += 1
 
     def update_weight(self, klass, weight_set):
-        pass  # TODO
+        """
+        @description: Update one class weight set in the perceptron model
+                      and in the database
+        """
+
+        # Validation
+        if klass not in self.weights.keys():
+            raise Exception("Undefined class")
+        if not set(self.features) == set(weight_set.keys()):
+            raise Exception("incorrect weight features provided")
+
+        # Updates
+        self.weights[klass] = weight_set  # set the weights for the model
+        database.update_weights(self.db, klass, weight_set)
+        return True
 
     def set_iterations(self, iterations=1):
         """
@@ -171,10 +199,47 @@ class AveragedPerceptron(Perceptron):
                 pass
             return False
 
+        try:  # Insert training data
+            if not training_data:
+                pass
+            for data in training_data:
+                try:
+                    self.add_training_data(data['class'], data['feature_vector'])
+                except:
+                    print "error processing training data row. skipping"
+                    pass
+        except:
+            print "Error during training data insertion. Skipping."
+            print traceback.print_exc()
+            return False
+
         return True
 
-    def train(self):
-        pass  # TODO
+    def train(self, training_data, do_validation=True):
+        """
+        @description: train the perceptron with training data provided
+        @args: training_data -> array of dicts
+            dict representation example: {"feature_vector": [1,0,1,1], "class": "Dog"}
+        """
+
+        if do_validation:
+            self.validate_data(training_data)  # this is done before the perceptron is trained so that any data errors can be computed early.
+
+        weights = self.weights
+        history = self.history
+
+        for i in range[0:self.iterations]:
+            # TODO - randomise the training data order
+            for data in training_data:
+                klass = training_data["class"]  # class
+                v = training_data["feature_vector"]  # vector
+                res = self.classify(weights, v)
+                if res is not klass:  # the correct class != the predicted class
+
+                    pass
+                    # TODO - do vector shit here
+                #TODO - save the weight to vi
+        # TODO - calculate avg
 
     def classify(self, feature_data_set):  # TODO - test this
         """
@@ -201,3 +266,5 @@ class AveragedPerceptron(Perceptron):
             res = database.get_all_historical_weights_for_class(k)
             weight_set[k] = compute_average_for_class(res)
         return weight_set
+
+    def add_historical_weight()
