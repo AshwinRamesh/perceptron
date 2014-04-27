@@ -152,10 +152,27 @@ class Perceptron(object):
         return True
 
     def update_training_weights(self, expected, output, data):
+        """
+        @description: Update the weights to nudge the model towards a better
+                      classifier
+        """
         expected_weights = self.weights[expected]
         output_weights = self.weights[output]
+        new_expected = {}
+        new_output = {}
 
-        # TODO
+        # Perform calculations
+        for f in self.features:
+            new_expected[f] = expected_weights[f] + data[f]
+            new_output[f] = output_weights[f] - data[f]
+
+        # Update model weights
+        self.weights[expected] = new_expected
+        self.weights[output] = new_output
+
+        # change weights in DB
+        self.update_weight(output, new_output)
+        self.update_weight(expected, new_expected)
 
         return True
 
@@ -296,7 +313,7 @@ class AveragedPerceptron(Perceptron):
 
                 # Check classification and update weights
                 if output_class is not expected_class:
-                    self.update_training_weights(expected_class, output_class, training_data)  # TODO
+                    self.update_training_weights(expected_class, output_class, training_data)
                     self.add_historical_weight(id, output_class, weights[output_class])
 
                 self.add_historical_weight(id, expected_class, weights[expected_class])
