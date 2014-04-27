@@ -351,7 +351,7 @@ class AveragedPerceptron(Perceptron):
         """
         for k in self.classes:
             temp_weights = {}
-            res = database.get_all_historical_weights_for_class(k)
+            res = database.get_historical_weights_by_class(self.db, k)
             num_rows = len(res)
 
             for r in res:  # iterate through each row
