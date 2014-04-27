@@ -119,7 +119,7 @@ class Perceptron(object):
                 temp_weight[f] = self.base_weight
             self.weights[c] = temp_weight
 
-    def add_historical_weight(self, training_data_id, klass, feature_data_set):
+    def add_historical_weight(self, training_data_id, klass, feature_data_set, iteration):
         """
         @description: Add a historical weight value into the database
         """
@@ -130,7 +130,7 @@ class Perceptron(object):
         if not set(self.features) == set(feature_data_set.keys()):
             raise Exception("incorrect weight features provided")
 
-        database._insert_historical_weights(self.db, klass, training_data_id, feature_data_set)
+        database._insert_historical_weights(self.db, klass, training_data_id, feature_data_set, iteration)
         return True
 
     def reset_historical_weights(self):
@@ -157,7 +157,6 @@ class Perceptron(object):
                       classifier
         """
         expected_weights = self.weights[expected]
-        print output
         output_weights = self.weights[output]
         new_expected = {}
         new_output = {}
@@ -303,6 +302,7 @@ class AveragedPerceptron(Perceptron):
 
         # Iterate through iterations and training data
         for i in range(0, iterations):
+            print "Iteration %d" % (i + 1)
             for id in training_ids:
                 # Retrieve the training data item
                 training_data, expected_class = database.get_training_data(self.db, id)
@@ -314,19 +314,19 @@ class AveragedPerceptron(Perceptron):
                 output_score, output_class = self.classify(training_data)
 
                 # Check classification and update weights
-                if output_class is not expected_class:
+                if not output_class == expected_class:
                     self.update_training_weights(expected_class, output_class, training_data)
-                    self.add_historical_weight(id, output_class, weights[output_class])
+                    self.add_historical_weight(id, output_class, weights[output_class], i+1)
 
-                self.add_historical_weight(id, expected_class, weights[expected_class])
+                self.add_historical_weight(id, expected_class, weights[expected_class], i+1)
 
         # Perform averaging
         if averaged:
-            self.calculate_averaged_weights()  # TODO
+            self.calculate_averaged_weights()
 
         return True
 
-    def classify(self, feature_data_set):  # TODO - test this
+    def classify(self, feature_data_set):
         """
         @description: sum the feature vector against the Perceptron weights to
         classify the vector
@@ -345,9 +345,23 @@ class AveragedPerceptron(Perceptron):
         return best, best_class
 
     def calculate_averaged_weights(self):
-        # TODO
-        weight_set = []
+        """
+        @description: Calculate the averaged weights for all classes
+                      and set those as new weights
+        """
         for k in self.classes:
+            temp_weights = {}
             res = database.get_all_historical_weights_for_class(k)
-            weight_set[k] = compute_average_for_class(res)
-        return weight_set
+            num_rows = len(res)
+
+            for r in res:  # iterate through each row
+                for f in self.features:  # add weights for each feature
+                    if f not in temp_weights.keys():
+                        temp_weights[f] = float(r[f])
+                    else:
+                        temp_weights[f] += float(r[f])
+
+            for f in self.features:  # average all feature weights
+                temp_weights[f] = temp_weights[f] / num_rows
+
+            self.update_weight(k, temp_weights)  # Update the weight

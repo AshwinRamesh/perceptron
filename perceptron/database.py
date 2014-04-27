@@ -171,6 +171,7 @@ def _create_historical_weights_table(db_name, features):
     sql = "CREATE TABLE historical_weights (\
             id INTEGER PRIMARY KEY,\
             training_data_id INTEGER,\
+            iteration INTEGER,\
             class TEXT\
             %s);"
     feature_sql = ""
@@ -260,9 +261,9 @@ def _insert_weights(db_name, klass, feature_dict):
     return _simple_query_wrapper(db_name, sql, args)
 
 
-def _insert_historical_weights(db_name, klass, training_id, feature_dict):
-    sql = "INSERT INTO historical_weights (class, training_data_id %s) VALUES (?, ? %s);"
-    args = [klass, int(training_id)]
+def _insert_historical_weights(db_name, klass, training_id, feature_dict, iteration):
+    sql = "INSERT INTO historical_weights (class, training_data_id, iteration %s) VALUES (?, ?, ? %s);"
+    args = [klass, int(training_id), int(iteration)]
     feature_key_sql = ""
     feature_arg_sql = ""
 
@@ -361,6 +362,16 @@ def get_training_data(db_name, t_id):
         return training_data, klass
 
     return False, False
+
+
+def get_historical_weights_by_class(db_name, klass):
+    sql = "SELECT * FROM historical_weights WHERE class = ?"
+    args = (klass, )
+    res = _simple_select_query_wrapper(db_name, sql, args)
+
+    if res:
+        return res
+    return False
 
 """
 Update Database Functions

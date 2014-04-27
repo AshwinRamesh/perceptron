@@ -41,6 +41,7 @@ CREATE TABLE historical_weights (
     id INTEGER PRIMARY KEY,
     class TEXT, -- foreign key to classes table
     training_data_id INTEGER,  -- foreign key to training data item id
+    iteration INTEGER,
     feature_1 REAL,
     feature_2 REAL,
     ..  -- each feature name is a weight column in this table
