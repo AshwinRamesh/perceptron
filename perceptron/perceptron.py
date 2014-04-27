@@ -92,6 +92,16 @@ class Perceptron(object):
             raise Exception("Iterations must be minimum 1.")
         self.iterations = iterations
 
+    def reset_weights(self):
+        self.weights = {}
+        self.initialise_weights()
+        data_set = {}
+        for f in self.features:
+            data_set[f] = self.base_weight
+        for c in self.classes:
+            database.update_weights(self.db, c, data_set)
+        return True
+
     def initialise_weights(self):
         """
         @description: initialise the starting weights to 0.
@@ -108,6 +118,46 @@ class Perceptron(object):
             for f in self.features:
                 temp_weight[f] = self.base_weight
             self.weights[c] = temp_weight
+
+    def add_historical_weight(self, training_data_id, klass, feature_data_set):
+        """
+        @description: Add a historical weight value into the database
+        """
+
+        # Validation
+        if klass not in self.weights.keys():
+            raise Exception("Undefined class")
+        if not set(self.features) == set(feature_data_set.keys()):
+            raise Exception("incorrect weight features provided")
+
+        database._insert_historical_weights(self.db, klass, training_data_id, feature_data_set)
+        return True
+
+    def reset_historical_weights(self):
+        database.delete_historical_weights(self.db)
+        return True
+
+    def add_classifier_data(self, predicted_class, feature_data_set):
+        """
+        @description: Add user input classifier data into db
+        """
+
+        # Validation
+        if predicted_class not in self.weights.keys():
+            raise Exception("Undefined class")
+        if not set(self.features) == set(feature_data_set.keys()):
+            raise Exception("incorrect weight features provided")
+
+        database._insert_classification_data(self.db, predicted_class, feature_data_set)
+        return True
+
+    def update_training_weights(self, expected, output, data):
+        expected_weights = self.weights[expected]
+        output_weights = self.weights[output]
+
+        # TODO
+
+        return True
 
     @abstractmethod
     def initialise_perceptron(self):
@@ -215,31 +265,47 @@ class AveragedPerceptron(Perceptron):
 
         return True
 
-    def train(self, training_data, do_validation=True):
+    def train(self, averaged=True, reset_data=False):
         """
         @description: train the perceptron with training data provided
-        @args: training_data -> array of dicts
-            dict representation example: {"feature_vector": [1,0,1,1], "class": "Dog"}
+        @args:
+            -averaged (bool) - perform averaging after training?
         """
 
-        if do_validation:
-            self.validate_data(training_data)  # this is done before the perceptron is trained so that any data errors can be computed early.
+        if reset_data:  # in case that the perceptron has stale data
+            self.reset_weights()
+            self.reset_historical_weights()
 
+        # Get training data ids from db
+        training_ids = database.get_training_data_ids(self.db)
+
+        # Initialise variables and alias variables
+        iterations = self.iterations
         weights = self.weights
-        history = self.history
 
-        for i in range[0:self.iterations]:
-            # TODO - randomise the training data order
-            for data in training_data:
-                klass = training_data["class"]  # class
-                v = training_data["feature_vector"]  # vector
-                res = self.classify(weights, v)
-                if res is not klass:  # the correct class != the predicted class
+        # Iterate through iterations and training data
+        for i in range(0, iterations):
+            for id in training_ids:
+                # Retrieve the training data item
+                training_data, expected_class = database.get_training_data(self.db, id)
+                if not training_data or expected_class:
+                    raise Exception("Error during training data retrieval. Aborting.")
 
-                    pass
-                    # TODO - do vector shit here
-                #TODO - save the weight to vi
-        # TODO - calculate avg
+                # Classify
+                output_class = self.classify(training_data)  # TODO
+
+                # Check classification and update weights
+                if output_class is not expected_class:
+                    self.update_training_weights(expected_class, output_class, training_data)  # TODO
+                    self.add_historical_weight(id, output_class, weights[output_class])
+
+                self.add_historical_weight(id, expected_class, weights[expected_class])
+
+        # Perform averaging
+        if averaged:
+            self.calculate_averaged_weights()  # TODO
+
+        return True
 
     def classify(self, feature_data_set):  # TODO - test this
         """
@@ -266,5 +332,3 @@ class AveragedPerceptron(Perceptron):
             res = database.get_all_historical_weights_for_class(k)
             weight_set[k] = compute_average_for_class(res)
         return weight_set
-
-    def add_historical_weight()

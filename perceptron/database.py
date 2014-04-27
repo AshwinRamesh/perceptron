@@ -184,7 +184,7 @@ def _create_historical_weights_table(db_name, features):
 def _create_classification_data_table(db_name, features):
     sql = "CREATE TABLE classification_data (\
             id INTEGER PRIMARY KEY,\
-            class TEXT\
+            classified_class TEXT\
             %s);"
     feature_sql = ""
     for feature in features:
@@ -308,7 +308,7 @@ def get_iterations(db_name):
 
 def get_classes(db_name):
     sql = "SELECT id, class FROM classes"
-    res = _simple_query_wrapper(db_name, sql, 0)
+    res = _simple_select_query_wrapper(db_name, sql, 0)
 
     if res:
         ret_list = []
@@ -330,6 +330,38 @@ def get_features(db_name):
     return False
 
 
+def get_training_data_ids(db_name):
+    sql = "SELECT id FROM training_datas"
+    res = _simple_select_query_wrapper(db_name, sql, None)
+
+    if res:
+        ret_list = []
+        for r in res:
+            ret_list.append(int(r['id']))
+        return ret_list
+    return False
+
+
+def get_training_data(db_name, t_id):
+    """
+    @description: Get a training data item by the ID
+    """
+    sql = "SELECT * FROM training_datas WHERE id = ?"
+    args = (t_id, )
+
+    res = _simple_select_query_wrapper(db_name, sql, args)
+    if res:
+        data = res[0]
+        training_data = {}
+        for k in data.keys():
+            if k == "id" or k == "class":
+                pass
+            training_data[k] = float(data[k])
+        klass = data['class']
+        return training_data, klass
+
+    return False, False
+
 """
 Update Database Functions
     - functions to update table data
@@ -348,3 +380,14 @@ def update_weights(db_name, klass, weight_set):
     sql = sql % ", ".join(attribute_sql)
     args.append(klass)
     _simple_query_wrapper(db_name, sql, tuple(args))
+
+
+"""
+Delete Database Functions
+    - functions to delete the auto increment and delete from tables
+"""
+
+
+def delete_historical_weights(db_name):
+    sql = "DELETE FROM historical_weights; DELETE FROM sqlite_sequence WHERE name='historical_weights'"
+    _simple_query_wrapper(db_name, sql, None)
