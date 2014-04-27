@@ -157,6 +157,7 @@ class Perceptron(object):
                       classifier
         """
         expected_weights = self.weights[expected]
+        print output
         output_weights = self.weights[output]
         new_expected = {}
         new_output = {}
@@ -305,11 +306,12 @@ class AveragedPerceptron(Perceptron):
             for id in training_ids:
                 # Retrieve the training data item
                 training_data, expected_class = database.get_training_data(self.db, id)
-                if not training_data or expected_class:
+
+                if not training_data or not expected_class:
                     raise Exception("Error during training data retrieval. Aborting.")
 
                 # Classify
-                output_class = self.classify(training_data)  # TODO
+                output_score, output_class = self.classify(training_data)
 
                 # Check classification and update weights
                 if output_class is not expected_class:
@@ -335,7 +337,7 @@ class AveragedPerceptron(Perceptron):
         weights = self.weights
         for c in self.classes:
             score = 0.0
-            for feature in feature_data_set.keys():
+            for feature in self.features:
                 score += feature_data_set[feature] * weights[c][feature]
             if score > best:
                 best = score

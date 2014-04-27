@@ -355,7 +355,7 @@ def get_training_data(db_name, t_id):
         training_data = {}
         for k in data.keys():
             if k == "id" or k == "class":
-                pass
+                continue
             training_data[k] = float(data[k])
         klass = data['class']
         return training_data, klass
