@@ -22,4 +22,5 @@ Disadvantage
 
 TODO
 ----
-- Allow for MYSQL
+- Other types of perceptrons
+- Bias

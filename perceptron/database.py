@@ -222,7 +222,11 @@ def _insert_classes(db_name, classes):
 def _insert_features(db_name, features):
     sql = "INSERT INTO features (feature) VALUES (?)"
     error_classes = []  # stores all error inserts
+    i = 0
     for k in features:
+        i += 1
+        if i % 100 == 0:
+            print "Number of features processed: %d" % i
         if not _simple_query_wrapper(db_name, sql, (k, )):
             error_classes.append(k)
     if len(error_classes) > 0:
@@ -237,7 +241,7 @@ def _insert_training_data(db_name, klass, feature_dict):
     feature_arg_sql = ""
 
     for k in feature_dict.keys():
-        args.append(feature_dict[k])
+        args.append(float(feature_dict[k]))
         feature_arg_sql += ", ? "
         feature_key_sql += ", %s" % k
     sql = sql % (feature_key_sql, feature_arg_sql)
