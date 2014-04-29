@@ -184,7 +184,7 @@ class AveragedPerceptron(object):
 
         return True
 
-    def train(self, reset_data=False):
+    def train(self):
         """
         @description: train the perceptron with training data provided
         @args:
