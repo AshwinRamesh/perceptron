@@ -58,16 +58,6 @@ class AveragedPerceptron(object):
                                    "weights": training_data_set,
                                    "training_data_id": len(self.training_data) + 1})
 
-    def update_weight(self, klass, weight_set):
-        """
-        @description: Update one class weight set in the perceptron model
-        """
-        if klass not in self.weights.keys():
-            raise Exception("Undefined class")
-        if not set(self.features) == set(weight_set.keys()):
-            raise Exception("incorrect weight features provided")
-        self.weights[klass] = weight_set  # set the weights for the model
-
     def set_iterations(self, iterations=1):
         """
         @description: set the number of iterations to run through training data
@@ -90,71 +80,13 @@ class AveragedPerceptron(object):
 
         for c in self.classes:
             temp_weight = {}
+            self.historical_trainings[c] = 0
             for f in self.features:
                 temp_weight[f] = self.base_weight
             self.weights[c] = dict(temp_weight)
             self.averaged_weights[c] = dict(temp_weight)
             self.historical_weights[c] = dict(temp_weight)
             self.last_set_weights[c] = dict(temp_weight)
-
-    def update_histoical_weights(self):
-        """
-        @description: Non-lazy-update version of updating historical weights
-        """
-        for k in self.classes:
-            for f in self.features:
-                self.historical_weights[k][f] += self.weights[k][f]
-
-    def lazy_update_historical_weights(self, klass=None):
-        """
-        @description: Lazy update of historical weights.
-        @args:
-            - klass (str): if None, will update all classes.
-                           is str, will update specified class
-        """
-        if klass is None:  # Update all classes
-            for c in self.classes:
-                update_level = self.num_trainings - self.historical_trainings[c]  # Number of updates class is behind by
-                for f in self.features:
-                    self.historical_weights[c][f] += (update_level * self.last_set_weights[c][f]) + self.weights[c][f]
-                self.historical_trainings[c] = self.num_trainings
-        else:  # Update specified class
-            update_level = self.num_trainings - self.historical_trainings[c]  # Number of updates class is behind by
-            for f in self.features:
-                self.historical_weights[klass][f] += (update_level * self.last_set_weights[klass][f]) + self.weights[klass][f]
-            self.historical_trainings[klass] = self.num_trainings
-
-    def calculate_averaged_weights(self):
-        """
-        @description: Calculate the averaged weights for all classes.
-        @return
-            - Success: Dict of averaged weights
-            - Failure: False
-        """
-        for c in self.classes:
-            for f in self.features:
-                self.averaged_weights[c][f] = self.historical_weights[c][f] / self.num_trainings
-
-    def update_training_weights(self, expected, output, data):
-        """
-        @description: Update the weights to nudge the model towards a better
-                      classifier
-        """
-        expected_weights = self.weights[expected]
-        output_weights = self.weights[output]
-        new_expected = {}
-        new_output = {}
-
-        # Perform calculations
-        for f in self.features:
-            new_expected[f] = expected_weights[f] + data[f]
-            new_output[f] = output_weights[f] - data[f]
-
-        # Update model weights
-        self.weights[expected] = new_expected
-        self.weights[output] = new_output
-
-        return True
 
     def initialise_perceptron(self, classes, features, iterations=1, training_data=None):  # TODO
         """
@@ -164,7 +96,6 @@ class AveragedPerceptron(object):
         """
 
         # Set the details for the actual object
-        print "setting data.."
         self.set_iterations(iterations)
         self.add_class(classes)
         self.add_feature(features)
@@ -184,6 +115,89 @@ class AveragedPerceptron(object):
 
         return True
 
+    def update_weight(self, klass, weight_set):
+        """
+        @description: Update one class weight set in the perceptron model
+        """
+        if klass not in self.weights.keys():
+            raise Exception("Undefined class")
+        if not set(self.features) == set(weight_set.keys()):
+            raise Exception("incorrect weight features provided")
+        self.weights[klass] = weight_set  # set the weights for the model
+
+    def update_histoical_weights(self):
+        """
+        @description: Non-lazy-update version of updating historical weights
+        """
+        for k in self.classes:
+            for f in self.features:
+                self.historical_weights[k][f] += float(self.weights[k][f])
+
+    def lazy_update_historical_weights(self, klass=None):
+        """
+        @description: Lazy update of historical weights.
+        @args:
+            - klass (str): if None, will update all classes.
+                           is str, will update specified class
+        """
+        debug = self.debug
+
+        if klass is None:  # Update all classes
+            for c in self.classes:
+                update_level = self.num_trainings - self.historical_trainings[c]  # Number of updates class is behind by
+                if debug:
+                    print "Updating Class: %s | Update Backlog: %d | Number Training Items: %d" %(c, update_level, self.num_trainings)
+                if update_level >= 0:
+                    for f in self.features:
+                        self.historical_weights[c][f] += (update_level * self.weights[c][f])
+                self.historical_trainings[c] = self.num_trainings
+        else:  # Update specified class
+            update_level = self.num_trainings - self.historical_trainings[klass] - 1 # Number of updates class is behind by
+
+            if debug:
+                print "Updating Class: %s | Update Backlog: %d | Number Training Items: %d" %(klass, update_level, self.num_trainings)
+            if update_level >= 0:
+                for f in self.features:
+                    self.historical_weights[klass][f] += (update_level * self.last_set_weights[klass][f]) + self.weights[klass][f]
+            self.historical_trainings[klass] = self.num_trainings
+
+    def calculate_averaged_weights(self):
+        """
+        @description: Calculate the averaged weights for all classes.
+        @return
+            - Success: Dict of averaged weights
+            - Failure: False
+        """
+        for c in self.classes:
+            for f in self.features:
+                self.averaged_weights[c][f] = self.historical_weights[c][f] / self.num_trainings
+
+    def update_training_weights(self, expected, output, data):
+        """
+        @description: Update the weights to nudge the model towards a better
+                      classifier
+        """
+        self.last_set_weights[expected] = dict(self.weights[expected])
+        self.last_set_weights[output] = dict(self.weights[output])
+        if self.debug:
+            print "Last set:"
+            print self.last_set_weights
+        expected_weights = self.weights[expected]
+        output_weights = self.weights[output]
+        new_expected = {}
+        new_output = {}
+
+        # Perform calculations
+        for f in self.features:
+            new_expected[f] = expected_weights[f] + data[f]
+            new_output[f] = output_weights[f] - data[f]
+
+        # Update model weights
+        self.weights[expected] = new_expected
+        self.weights[output] = new_output
+
+        return True
+
     def train(self):
         """
         @description: train the perceptron with training data provided
@@ -198,36 +212,47 @@ class AveragedPerceptron(object):
         lazy_update = self.lazy_update
         debug = self.debug
 
+        if debug:
+            print "\n ====================== \n"
+
         for i in range(0, iterations):  # For each iteration
             if debug:
+                print "------------------ \n"
                 print "Iteration %d" % (i + 1)
 
             for t in training_data:  # For each training item
+                if debug:
+                    print "************"
                 self.num_trainings += 1
                 gold_class = t['class']
-                if debug:
-                    print "Training id: %d | Gold Class %s" % (t['training_data_id'], gold_class)
 
                 output_score, output_class = self.classify(t['weights'])  # Classify item
                 if debug:
-                    print "Training item %d (iteration %d) classified as %s" % (t['training_data_id'], i, output_class)
+                    print "Training item %d (iteration %d) | Classified: %s | Gold: %s" % (t['training_data_id'], i + 1, output_class, gold_class)
 
                 if not output_class == gold_class:  # Check classification and update weights
-                    self.update_training_weights(gold_class, output_class, training_data)
+                    self.update_training_weights(gold_class, output_class, t['weights'])
+                    if averaged and lazy_update:  # Lazy update
+                        self.lazy_update_historical_weights(gold_class)
+                        self.lazy_update_historical_weights(output_class)
 
-                if averaged and lazy_update:  # Lazy update
-                    self.lazy_update_historical_weights(gold_class)
-                    self.lazy_update_historical_weights(output_class)
-                elif averaged:  # Non-lazy update
-                    self.calculate_averaged_weights()
+                if averaged and not lazy_update:  # Non-lazy update
+                    self.update_histoical_weights()
                 else:  # No averaging to be done
                     pass
-
-        if lazy_update:  # Update all classes
+                if debug:
+                    print "************"
+            if debug:
+                print "Historical Sum: %s" % str(self.historical_weights)
+                print "------------------ \n"
+        if averaged and lazy_update:  # Update all classes
             self.lazy_update_historical_weights(None)
 
         if averaged:  # Get final averaged weights
             self.calculate_averaged_weights()
+
+        if debug:
+            print "\n ====================== \n"
 
     def classify(self, feature_data_set):
         """
