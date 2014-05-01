@@ -17,3 +17,10 @@ Usage
 - Install a virtualenv (with pypy would make it faster)
 - Install this package
 - See example script.
+
+
+TODO
+----
+
+- Additional statistical analysis
+- Convert the whole system to use numpy (faster!)
