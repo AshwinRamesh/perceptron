@@ -215,6 +215,8 @@ class AveragedPerceptron(object):
         lazy_update = self.lazy_update
         debug = self.debug
 
+        self.initialise_weights()
+
         if debug:
             print "\n ====================== \n"
 
