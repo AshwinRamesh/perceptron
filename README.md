@@ -1,26 +1,19 @@
 Perceptron
 ==========
 
-Simple implementation of a perceptron that stores all data in a sqlite DB rather than in memory.
+Simplistic implmementation of a perceptron (averaged).
 
-Currently writes to a sqlite database
+Features
+--------
 
-Advantages
-----------
-
-- No need to retrain perceptron to create another model of it. Can simply load from db
-- Can perform additional tasks on the computed/initial data set from db
-- Data is standardised and easy to access
-- Low memory use in training
+- Training / Classifying multi-classes
+- n-fold cross validation
+- f-score / precision / recall (micro / macro)
 
 
-Disadvantage
-------------
+Usage
+-----
 
-- Higher training time due to I/O operations to DB
-
-
-TODO
-----
-- Other types of perceptrons
-- Bias
+- Install a virtualenv (with pypy would make it faster)
+- Install this package
+- See example script.

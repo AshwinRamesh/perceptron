@@ -46,14 +46,17 @@ class AveragedPerceptron(object):
             if klass not in self.features:
                 self.classes.append(klass)
 
-    def add_training_data(self, klass, training_data_set):
+    def add_training_data(self, klass, training_data_set, skip_validation=True):
         """
         @description: Add training data instance into memory
         """
-        if klass not in self.weights.keys():
-            raise Exception("Undefined class")
-        if not set(self.features) == set(training_data_set.keys()):
-            raise Exception("incorrect weight features provided")
+        if not skip_validation:
+            if klass not in self.weights.keys():
+                raise Exception("Undefined class")
+            if not set(self.features) == set(training_data_set.keys()):
+                raise Exception("incorrect weight features provided")
+        for f in self.features:
+            training_data_set[f] = float(training_data_set[f])  # Will throw exception if this fails.
         self.training_data.append({"class": klass,
                                    "weights": training_data_set,
                                    "training_data_id": len(self.training_data) + 1})
