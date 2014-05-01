@@ -1,4 +1,3 @@
-from .perceptron import AveragedPerceptron
 from random import shuffle
 
 
@@ -37,8 +36,7 @@ class Statisticals(object):
             for j in range(0, n):  # Create training set
                 if i == j:
                     continue
-                data = data + folds[i]
-
+                data = data + folds[j]
             p.training_data = data  # reset training data
             p.train()
             for item in folds[i]:  # classify each item in non-training set
