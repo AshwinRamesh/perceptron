@@ -14,8 +14,6 @@ class Statisticals(object):
             - perceptron (obj): actual fullly loaded perceptron
         """
         self.perceptron = perceptron
-        self.cross_validations = {}
-        pass
 
     @staticmethod
     def _partition(lst, n):  # http://stackoverflow.com/a/2660034
@@ -29,21 +27,23 @@ class Statisticals(object):
         if len(instances) < n:
             raise Exception("Cannot cross validate. Not enough training data")
 
-        folds = self.partition(instances, n)
-        res = []
+        folds = self._partition(instances, n)
+        res = [None] * n
 
         for i in range(0, n):  # For each fold
+            print "Calculating fold %d" % (i+1)
             res[i] = []
             data = []
             for j in range(0, n):  # Create training set
                 if i == j:
                     continue
-                    data + folds[i]
+                data = data + folds[i]
+
             p.training_data = data  # reset training data
             p.train()
-            for k in len(folds[i]):  # classify each item in non-training set
-                score, classified = p.classify(folds[i][k]["weights"])
-                res[i].append({"gold": folds[i][k]['class'], "classified": classified})
+            for item in folds[i]:  # classify each item in non-training set
+                score, classified = p.classify(item["weights"])
+                res[i].append({"gold": item['class'], "classified": classified})
         return res
 
     def _stratified_folds_cross(self, n=10):
@@ -63,8 +63,30 @@ class Statisticals(object):
         else:
             return self._normal_folds_cross(n)
 
-    def calculate_micro_fscore(self):
-        pass
+    def calculate_micro_fscore(self, folds):
+        true_positives = 0
+        false_negatives = 0
+        false_positives = 0
+
+        classes = self.perceptron.classes
+
+        for f in folds:  # for each fold
+            for c in classes:  # for each class
+                for item in f:  # for each item in the fold
+                    if item['classified'] == c:  # classifier has said C
+                        if item['gold'] == c:  # correct classification
+                            true_positives += 1
+                        else:  # classifier mistakes as C
+                            false_positives += 1
+                    elif item['gold'] == c:  # gold is C but not classifier
+                        false_negatives += 1
+
+        print true_positives, false_negatives, false_positives
+        precision = float(true_positives)/(true_positives + false_positives)
+        recall = float(true_positives)/(true_positives + false_negatives)
+        f_score = (2.0 * precision * recall)/(precision + recall)
+
+        return precision, recall, f_score
 
     def calculate_macro_fscore(self):
         pass
