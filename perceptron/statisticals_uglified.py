@@ -35,11 +35,11 @@ class Statisticals(object):
         folds = self._partition(instances, n)
         res = [None] * n
 
-        for i in range(0, n):  # For each fold
+        for i in xrange(0, n):  # For each fold
             print "Calculating fold %d" % (i+1)
             res[i] = []
             data = []
-            for j in range(0, n):  # Create training set
+            for j in xrange(0, n):  # Create training set
                 if i == j:
                     continue
                 data = data + folds[j]

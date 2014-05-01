@@ -1,4 +1,5 @@
 from collections import defaultdict
+import time
 
 
 class AveragedPerceptron(object):
@@ -24,6 +25,7 @@ class AveragedPerceptron(object):
         """
 
         # Initialise variables and alias variables
+        start = time.time()
         training_data = self.training_data
         averaged = not (self.skip_averaging)
         num_trainings = 0
@@ -32,7 +34,7 @@ class AveragedPerceptron(object):
             self.historical_trainings = {klass: defaultdict(int) for klass in self.classes}
             self.averaged_weights = {klass: defaultdict(int) for klass in self.classes}
 
-        for i in range(0, self.iterations):  # For each iteration
+        for i in xrange(0, self.iterations):  # For each iteration
             for t in training_data:  # For each training item
                 gold_class = t['class']
                 output_score, output_class = self.classify(t['weights'])  # Classify item
@@ -57,6 +59,7 @@ class AveragedPerceptron(object):
                     self.averaged_weights[c][f] += (num_trainings - self.historical_trainings[c][f]) * self.weights[c][f]
                     self.averaged_weights[c][f] /= num_trainings
                     self.historical_trainings[c][f] = num_trainings
+        print "Training Complete: Iterations: %d | Training Data: %d | Averaged: %s | Time Taken: %s" % (self.iterations, len(training_data), str(averaged), time.time() - start)
 
     def classify(self, feature_data_set):
         """
