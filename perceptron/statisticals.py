@@ -16,10 +16,16 @@ class Statisticals(object):
 
     @staticmethod
     def _partition(lst, n):  # http://stackoverflow.com/a/2660034
+        """
+        @description: partition a list into N parts and return it
+        """
         division = len(lst) / float(n)
         return [lst[int(round(division * i)): int(round(division * (i + 1)))] for i in xrange(n)]
 
     def _normal_folds_cross(self, n=10):
+        """
+        @description: Non-stratified cross fold validation
+        """
         p = self.perceptron  # alias
         instances = p.training_data
         shuffle(instances)  # shuffle the data
@@ -44,7 +50,7 @@ class Statisticals(object):
                 res[i].append({"gold": item['class'], "classified": classified})
         return res
 
-    def _stratified_folds_cross(self, n=10):
+    def _stratified_folds_cross(self, n=10):  # TODO - if I have time
         pass
 
     def cross_validation(self, n=10, stratified=False):
@@ -62,6 +68,11 @@ class Statisticals(object):
             return self._normal_folds_cross(n)
 
     def calculate_micro_fscore(self, folds):
+        """
+        @description: Calculates micro f_score
+        @args
+            - folds (list): the return of the cross_validation
+        """
         true_positives = 0
         false_negatives = 0
         false_positives = 0
@@ -86,5 +97,5 @@ class Statisticals(object):
 
         return precision, recall, f_score
 
-    def calculate_macro_fscore(self):
+    def calculate_macro_fscore(self):  # TODO - if I have time
         pass
