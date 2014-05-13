@@ -1,5 +1,5 @@
-from perceptron.perceptron import AveragedPerceptron
-from perceptron.statisticals import Statisticals
+from perceptron.perceptron_uglified import AveragedPerceptron
+from perceptron.statisticals_uglified import Statisticals
 import time
 
 
@@ -15,9 +15,6 @@ def standardise_dataset(data_file):
             line = map(str.strip, line)
             data.append(line[3:])
 
-    print "Number of training data: %d" % len(data)
-    print "Number of features: %d" % (len(data[0]) - 1)
-
     # Get the features:
 
     example = list(data[0])
@@ -32,11 +29,14 @@ def standardise_dataset(data_file):
     training_data = []
     for d in data:
         t = {}
-        for i in range(0, len(d) - 1):
-            t["feature" + str(i + 1)] = d[i]
-        t["class"] = d[-1].strip(".")
-        training_data.append(t)
-
+        t['weights'] = {}
+        try:
+            for i in range(0, len(d) - 1):
+                t["weights"]["feature" + str(i + 1)] = float(d[i])
+            t["class"] = d[-1].strip(".")
+            training_data.append(t)
+        except:
+            pass
     return features, training_data
 
 
@@ -44,29 +44,15 @@ def main():
     features, training_data = standardise_dataset("data/ad.data")
     classes = ["ad", "nonad"]
     iterations = 3
-
-    p = AveragedPerceptron(skip_averaging=True, lazy_update=True, debug=False)
-    p.initialise_perceptron(features=features, classes=classes, iterations=iterations, training_data=None)
-    i = 0
-    error_count = 0
-
-    for d in training_data:
-        i += 1
-
-        try:
-            k = d['class']
-            f = dict(d)
-            del(f['class'])
-
-            p.add_training_data(k, f)
-        except Exception:
-            error_count += 1
-
+    start_time = time.time()
+    p = AveragedPerceptron(features, classes, training_data, iterations, False)
+    start_processing_time = time.time()
     # Do stuff here
     s = Statisticals(p)
     folds = s.cross_validation(10)
     p, r, f = s.calculate_micro_fscore(folds)
     print "Precision: %s Recall: %s F-Score: %s" % (str(p), str(r), str(f))
+    print "Total Time taken: %s (Training Time: %s)" % (str(time.time() - start_time), str(time.time() - start_processing_time))
     avgs = {}
     for i in range(0, len(folds)):
         correct = 0
@@ -85,7 +71,4 @@ def main():
     import json
     f.write(json.dumps(avgs))
 
-
-s = time.time()
 main()
-print "Total Time taken: %s" % str(time.time() - s)
